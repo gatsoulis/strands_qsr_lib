@@ -26,7 +26,7 @@ class QSR_SG1(QSR_Abstractclass):
         # qsrs 1-4 are called pairs, space, or type A and operate on pairs of objects
         # qsrs 5-6 are called singles, motion or type B and operate on individual objects
         self.all_possible_relations = ["stationary", "moving",  # type A, on singles
-                                       "stationary", "appoaching", "distancing",  # type B, on pairs
+                                       "same", "appoaching", "distancing",  # type B, on pairs
                                        "connected", "disconnected"]  # type C, on pairs
         # self.all_possible_relations = ["1", "2", "3", "4", "5", "6"]
         # self.meaningful_mapping = {"1": "disconnected", "2": "distancing", "3": "approaching", "4": "stationary",
@@ -55,19 +55,23 @@ class QSR_SG1(QSR_Abstractclass):
         """
         input_data = kwargs["input_data"]
         include_missing_data = kwargs["include_missing_data"]
-        ret = World_QSR_Trace(qsr_type=self.qsr_type)
+        world_qsr_trace = World_QSR_Trace(qsr_type=self.qsr_type)
         sorted_timestamps = input_data.get_sorted_timestamps()
 
         for i in range(1, len(sorted_timestamps)):
             t = sorted_timestamps[i]
             tp = sorted_timestamps[i - 1]
             world_state = input_data.trace[t]
-            # timestamp = world_state.timestamp # got to be same as t
+            timestamp = world_state.timestamp # got to be same as t
             singles = world_state.objects.keys()
             pairs = self.__return_all_possible_combinations(singles)
-            data = self.return_2t_step_data(input_data=input_data,
-                                            t=t, tp=tp,
-                                            for_whom={"singles": singles, "pairs": pairs})
+            world_qsr_state = self.return_world_qsr_state_at_t(input_data=input_data, t=t, tp=tp,
+                                                               for_whom={"singles": singles, "pairs": pairs})
+            # print(type(world_qsr_state), world_qsr_state)
+            world_qsr_trace.add_world_qsr_state(world_qsr_state)
+            # qsr = self.return_qsr(input_data=input_data,
+            #                                 t=t, tp=tp,
+            #                                 for_whom={"singles": singles, "pairs": pairs})
 
 
         # for t in input_data.get_sorted_timestamps():
@@ -84,49 +88,78 @@ class QSR_SG1(QSR_Abstractclass):
         #     else:
         #         if include_missing_data:
         #             ret.add_empty_world_qsr_state(timestamp)
-        return ret
+        return world_qsr_trace
 
-    def return_2t_step_data(self, input_data, t, tp, for_whom):
+    # custom functions follow
+    def return_world_qsr_state_at_t(self, input_data, t, tp, for_whom):
+        world_qsr_state = World_QSR_State(timestamp=t)
         world_state_t = input_data.trace[t]
         world_state_tp = input_data.trace[tp]
         for s in for_whom["singles"]:
             try:
-                timeslice = (world_state_t.objects[s], world_state_tp.objects[s])
-                qsr = self.return_type_a_qsr(timeslice=timeslice)
+                data = (world_state_t.objects[s], world_state_tp.objects[s])
+                between = str(s)
+                qsr_a = QSR(timestamp=t, between=between, qsr=self.return_type_a_qsr(data=data, error_tolerance=0.0))
+                world_qsr_state.add_qsr(qsr=qsr_a)
             except:
+                # TODO how will I handle failed calls in terms of the world_qsr_state? although I think it is fine as it is
                 print("error")
         for p in for_whom["pairs"]:
             try:
-                timeslice = (world_state_t.objects[p[0]], world_state_t.objects[p[1]],
-                             world_state_tp.objects[p[0]], world_state_tp.objects[p[1]])
-                qsr_b = self.return_type_b_qsr(timeslice=timeslice)
-                qsr_c = self.return_type_c_qsr(timeslice=timeslice)
+                between = str(p[0]) + "," + str(p[1])
+                data = (world_state_t.objects[p[0]], world_state_t.objects[p[1]],
+                        world_state_tp.objects[p[0]], world_state_tp.objects[p[1]])
+                qsr_b_str = self.return_type_b_qsr(data=data, error_tolerance=0.0)
+                data = (world_state_t.objects[p[0]], world_state_t.objects[p[1]])
+                qsr_c_str = self.return_type_c_qsr(data=data, error_tolerance=0.0)
+                qsr_bc_str = str(qsr_b_str) + "," + str(qsr_c_str)
+                qsr_bc = QSR(timestamp=t, between=between, qsr=qsr_bc_str)
+                world_qsr_state.add_qsr(qsr=qsr_bc)
             except:
+                # TODO how will I handle failed calls in terms of the world_qsr_state? although I think it is fine as it is
                 print("error")
-        return None
+        return world_qsr_state
 
     # "stationary", "moving",  # type A, on singles
-    def return_type_a_qsr(self, timeslice, error_tolerance=0.0):
-        vx = np.abs(timeslice[0].x - timeslice[1].x)
-        vy = np.abs(timeslice[0].y - timeslice[1].y)
-        # vz = np.abs(timeslice[0].z - timeslice[1].z) # TODO need to take care nan values
-        # print(vx, vy)
-        if vx > error_tolerance or vy > error_tolerance:
-            return "moving"
-        else:
-            return "stationary"
+    def return_type_a_qsr(self, data, error_tolerance=0.0):
+        vx = np.abs(data[0].x - data[1].x)
+        vy = np.abs(data[0].y - data[1].y)
+        # vz = np.abs(data[0].z - data[1].z) # TODO need to take care nan values
 
-    # "stationary", "appoaching", "distancing",  # type B, on pairs
-    def return_type_b_qsr(self, timeslice, error_tolerance=0.0):
-        # TODO return_type_b_qsr: calc euclideans and compare
-        return "todo"
+        if vx > error_tolerance or vy > error_tolerance:
+            return "+"  # "moving"
+        else:
+            return "0"  # "stationary"
+
+    # "same", "appoaching", "distancing",  # type B, on pairs
+    def return_type_b_qsr(self, data, error_tolerance=0.0):
+        # TODO need to sort out nan values, like .z
+        d_now = np.sqrt(np.square(data[0].x - data[1].x) + np.square(data[0].y - data[1].y))
+        d_prev = np.sqrt(np.square(data[2].x - data[3].x) + np.square(data[2].y - data[3].y))
+        d = d_now - d_prev
+        if d > error_tolerance:
+            return "+"  # distancing"
+        elif d < -error_tolerance:
+            return "-"  # approaching"
+        else:
+            return "0"  # same"
 
     # "connected", "disconnected"]  # type C, on pairs
-    def return_type_c_qsr(self, timeslice, error_tolerance=0.0):
-        # TODO return_type_c_qsr: get bboxes and see rcc3 code
-        return "todo"
+    def return_type_c_qsr(self, data, error_tolerance=0.0):
+        bb1 = data[0].return_bounding_box_2d()
+        bb2 = data[1].return_bounding_box_2d()
+        count_occluded_points = 0
+        for i in range(0, len(bb2), 2):
+            if self.__is_point_in_rectangle([bb2[i], bb2[i + 1]], bb1):
+                count_occluded_points += 1
+        if count_occluded_points == 0:
+            return "0"  # "disconnected"
+        else:
+            return "+"  # "connected"
 
-    # custom functions follow
+    def __is_point_in_rectangle(self, p, r, d=0.):
+        return p[0] >= r[0] - d and p[0] <= r[2] + d and p[1] >= r[0] - d and p[1] <= r[3] + d
+
     def __return_all_possible_combinations(self, objects_names):
         if len(objects_names) < 2:
             return []
@@ -136,15 +169,3 @@ class QSR_SG1(QSR_Abstractclass):
                 if i != j:
                     ret.append([i, j])
         return ret
-
-    def __compute_qsr(self, bb1, bb2):
-        count_occluded_points = 0
-        for i in range(0, len(bb2), 2):
-            if self.__is_point_in_rectangle([bb2[i], bb2[i + 1]], bb1):
-                count_occluded_points += 1
-        results = {0: "dc", 1: "po", 2: "o"}  # pythonic case
-        ret = results[count_occluded_points]
-        return ret
-
-    def __is_point_in_rectangle(self, p, r, d=0.):
-        return p[0] >= r[0] - d and p[0] <= r[2] + d and p[1] >= r[0] - d and p[1] <= r[3] + d

@@ -61,3 +61,4 @@ if __name__ == "__main__":
         for k, v in zip(out.qsrs.trace[t].qsrs.keys(), out.qsrs.trace[t].qsrs.values()):
             foo += str(k) + ":" + str(v.qsr) + "; "
         print(foo)
+    print("-- THE END --")
