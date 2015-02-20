@@ -99,7 +99,8 @@ class QSR_SG1(QSR_Abstractclass):
             try:
                 data = (world_state_t.objects[s], world_state_tp.objects[s])
                 between = str(s)
-                qsr_a = QSR(timestamp=t, between=between, qsr=self.return_type_a_qsr(data=data, error_tolerance=0.0))
+                qsr_a = QSR(timestamp=t, between=between, qsr=self.return_type_a_qsr(data=data, error_tolerance=0.0),
+                            qsr_type="a")
                 world_qsr_state.add_qsr(qsr=qsr_a)
             except:
                 # TODO how will I handle failed calls in terms of the world_qsr_state? although I think it is fine as it is
@@ -113,7 +114,7 @@ class QSR_SG1(QSR_Abstractclass):
                 data = (world_state_t.objects[p[0]], world_state_t.objects[p[1]])
                 qsr_c_str = self.return_type_c_qsr(data=data, error_tolerance=0.0)
                 qsr_bc_str = str(qsr_b_str) + "," + str(qsr_c_str)
-                qsr_bc = QSR(timestamp=t, between=between, qsr=qsr_bc_str)
+                qsr_bc = QSR(timestamp=t, between=between, qsr=qsr_bc_str, qsr_type="bc")
                 world_qsr_state.add_qsr(qsr=qsr_bc)
             except:
                 # TODO how will I handle failed calls in terms of the world_qsr_state? although I think it is fine as it is
