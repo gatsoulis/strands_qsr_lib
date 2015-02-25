@@ -31,7 +31,7 @@ if __name__ == "__main__":
         print("keywords:", options.keys())
         sys.exit(1)
 
-    world_trace = World_Trace()
+    world_trace1 = World_Trace()
     o1 = [Object_State(name="o1", timestamp=0, x=1., y=1., width=5., length=8.),
           Object_State(name="o1", timestamp=1, x=1., y=2., width=5., length=8.),
           Object_State(name="o1", timestamp=2, x=1., y=3., width=5., length=8.)]
@@ -44,21 +44,35 @@ if __name__ == "__main__":
     o3 = [Object_State(name="o3", timestamp=0, x=1., y=11., width=5., length=8.),
           Object_State(name="o3", timestamp=1, x=2., y=11., width=5., length=8.),
           Object_State(name="o3", timestamp=2, x=3., y=11., width=5., length=8.)]
-    world_trace.add_object_state_series(o1)
-    world_trace.add_object_state_series(o2)
-    world_trace.add_object_state_series(o3)
+    world_trace1.add_object_state_series(o1)
+    world_trace1.add_object_state_series(o2)
+    world_trace1.add_object_state_series(o3)
+
+    world_trace2 = World_Trace()
+    o1 = [Object_State(name="o4", timestamp=0, x=1., y=1., width=5., length=8.)]
+
+    o2 = [Object_State(name="o5", timestamp=0, x=11., y=1., width=5., length=8.)]
+    world_trace2.add_object_state_series(o1)
+    world_trace2.add_object_state_series(o2)
+
+    world_traces = {1:world_trace1, 2:world_trace2}
 
     # make a QSRlib object
     qsrlib = QSRlib()
-    # make a request message
-    request_message = QSRlib_Request_Message(which_qsr=which_qsr, input_data=world_trace, include_missing_data=True)
-    # request QSRs
-    out = qsrlib.request_qsrs(request_message=request_message)
-    # some print some nice data
-    print("Request was made at ", str(out.timestamp_request_made) + " and received at " + str(out.timestamp_request_received) + " and computed at " + str(out.timestamp_qsrs_computed) )
-    for t in out.qsrs.get_sorted_timestamps():
-        foo = str(t) + ": "
-        for k, v in zip(out.qsrs.trace[t].qsrs.keys(), out.qsrs.trace[t].qsrs.values()):
-            foo += str(k) + ":" + str(v.qsr) + "; "
-        print(foo)
+
+    for i in range(2):
+        for world_trace in world_traces.values():
+            # make a request message
+            request_message = QSRlib_Request_Message(which_qsr=which_qsr, input_data=world_trace, include_missing_data=True)
+            # request QSRs
+            out = qsrlib.request_qsrs(request_message=request_message)
+            # print(qsrlib.)
+            # some print some nice data
+            print("Request was made at ", str(out.timestamp_request_made) + " and received at " + str(out.timestamp_request_received) + " and computed at " + str(out.timestamp_qsrs_computed) )
+            for t in out.qsrs.get_sorted_timestamps():
+                foo = str(t) + ": "
+                for k, v in zip(out.qsrs.trace[t].qsrs.keys(), out.qsrs.trace[t].qsrs.values()):
+                    foo += str(k) + ":" + str(v.qsr) + "; "
+                print(foo)
+            print()
     print("-- THE END --")
