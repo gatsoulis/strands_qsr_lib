@@ -90,21 +90,44 @@ class QSR_SG1(QSR_Abstractclass):
         #             ret.add_empty_world_qsr_state(timestamp)
         return world_qsr_trace
 
+    def find_in_nearest_past(self, s, input_data, t):
+        sorted_ts = input_data.get_sorted_timestamps()
+        for i in reversed(sorted_ts[:sorted_ts.index(t)]):
+            world_state = input_data[i]
+            if s in world_state.objects:
+                return world_state
+
+
+
     # custom functions follow
     def return_world_qsr_state_at_t(self, input_data, t, tp, for_whom):
+        print("WTF?")
         world_qsr_state = World_QSR_State(timestamp=t)
         world_state_t = input_data.trace[t]
         world_state_tp = input_data.trace[tp]
         for s in for_whom["singles"]:
+            # try:
             try:
                 data = (world_state_t.objects[s], world_state_tp.objects[s])
+            except KeyError:
+                pass
+            try:
                 between = str(s)
+            except:
+                pass
+            try:
                 qsr_a = QSR(timestamp=t, between=between, qsr=self.return_type_a_qsr(data=data, error_tolerance=0.0),
                             qsr_type="a")
+            except:
+                pass
+            try:
                 world_qsr_state.add_qsr(qsr=qsr_a)
             except:
-                # TODO how will I handle failed calls in terms of the world_qsr_state? although I think it is fine as it is
-                print("error")
+                pass
+            # except Exception, err:
+            #     # TODO how will I handle failed calls in terms of the world_qsr_state? although I think it is fine as it is
+            #     print(err, "error: type a")
+            #     print()
         for p in for_whom["pairs"]:
             try:
                 between = str(p[0]) + "," + str(p[1])
@@ -118,7 +141,7 @@ class QSR_SG1(QSR_Abstractclass):
                 world_qsr_state.add_qsr(qsr=qsr_bc)
             except:
                 # TODO how will I handle failed calls in terms of the world_qsr_state? although I think it is fine as it is
-                print("error")
+                print("error: type bc")
         return world_qsr_state
 
     # "stationary", "moving",  # type A, on singles
