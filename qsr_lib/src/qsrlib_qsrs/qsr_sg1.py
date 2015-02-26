@@ -96,39 +96,38 @@ class QSR_SG1(QSR_Abstractclass):
             world_state = input_data[i]
             if s in world_state.objects:
                 return world_state
+        return None
 
 
 
     # custom functions follow
     def return_world_qsr_state_at_t(self, input_data, t, tp, for_whom):
-        print("WTF?")
         world_qsr_state = World_QSR_State(timestamp=t)
         world_state_t = input_data.trace[t]
         world_state_tp = input_data.trace[tp]
         for s in for_whom["singles"]:
-            # try:
+            pass
+        for p in for_whom["pairs"]:
             try:
                 data = (world_state_t.objects[s], world_state_tp.objects[s])
             except KeyError:
-                pass
+                world_state_tp_temp = self.find_in_nearest_past(s, input_data, t)
+                if world_state_tp_temp:
+                    data = (world_state_t.objects[s], world_state_tp_temp.objects[s])
+                else:
+                    print("No history found")
+                    continue
             try:
                 between = str(s)
-            except:
-                pass
-            try:
                 qsr_a = QSR(timestamp=t, between=between, qsr=self.return_type_a_qsr(data=data, error_tolerance=0.0),
                             qsr_type="a")
-            except:
-                pass
-            try:
+
                 world_qsr_state.add_qsr(qsr=qsr_a)
-            except:
-                pass
-            # except Exception, err:
-            #     # TODO how will I handle failed calls in terms of the world_qsr_state? although I think it is fine as it is
-            #     print(err, "error: type a")
-            #     print()
-        for p in for_whom["pairs"]:
+            except Exception, err:
+                # TODO how will I handle failed calls in terms of the world_qsr_state? although I think it is fine as it is
+                print(err, "error: type a")
+                print()
+
             try:
                 between = str(p[0]) + "," + str(p[1])
                 data = (world_state_t.objects[p[0]], world_state_t.objects[p[1]],
