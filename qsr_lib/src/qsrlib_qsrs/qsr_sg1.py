@@ -16,6 +16,7 @@ from __future__ import print_function, division
 from qsrlib_qsrs.qsr_abstractclass import QSR_Abstractclass
 from qsrlib_io.world_qsr_trace import *
 import numpy as np
+import sys
 
 
 class QSR_SG1(QSR_Abstractclass):
@@ -90,57 +91,76 @@ class QSR_SG1(QSR_Abstractclass):
         #             ret.add_empty_world_qsr_state(timestamp)
         return world_qsr_trace
 
-    def find_in_nearest_past(self, s, input_data, t):
+    def find_single_in_nearest_past(self, s, input_data, t):
         sorted_ts = input_data.get_sorted_timestamps()
         for i in reversed(sorted_ts[:sorted_ts.index(t)]):
-            world_state = input_data[i]
+            world_state = input_data.trace[i]
+            # try:
+            #     world_state = input_data.trace[i]
+            # except Exception, e:
+            #     print(e, "What is going on here?", type(input_data))
+            #     print(input_data.trace)
+            #     sys.exit(1)
             if s in world_state.objects:
-                return world_state
-        return None
+                return world_state, i
+        return None, None
 
-
+    def find_pair_in_nearest_past(self, p, input_data, t):
+        sorted_ts = input_data.get_sorted_timestamps()
+        for i in reversed(sorted_ts[:sorted_ts.index(t)]):
+            world_state = input_data.trace[i]
+            if p[0] in world_state.objects and p[1] in world_state.objects:
+                return world_state, i
+        return None, None
 
     # custom functions follow
-    def return_world_qsr_state_at_t(self, input_data, t, tp, for_whom):
+    def return_world_qsr_state_at_t(self, input_data, t, tp, for_whom, history_traceback=True):
         world_qsr_state = World_QSR_State(timestamp=t)
         world_state_t = input_data.trace[t]
         world_state_tp = input_data.trace[tp]
         for s in for_whom["singles"]:
-            pass
-        for p in for_whom["pairs"]:
             try:
                 data = (world_state_t.objects[s], world_state_tp.objects[s])
             except KeyError:
-                world_state_tp_temp = self.find_in_nearest_past(s, input_data, t)
-                if world_state_tp_temp:
-                    data = (world_state_t.objects[s], world_state_tp_temp.objects[s])
+                if history_traceback:
+                    world_state_tp_temp, tp_temp = self.find_single_in_nearest_past(s, input_data, t)
+                    # print("a: tracing back in history")
+                    # if world_state_tp_temp:
+                    try:
+                        data = (world_state_t.objects[s], world_state_tp_temp.objects[s])
+                    # else:
+                    except AttributeError:
+                        # print("a: No history found")
+                        continue
                 else:
-                    print("No history found")
                     continue
-            try:
-                between = str(s)
-                qsr_a = QSR(timestamp=t, between=between, qsr=self.return_type_a_qsr(data=data, error_tolerance=0.0),
-                            qsr_type="a")
+            between = str(s)
+            qsr_a = QSR(timestamp=t, between=between, qsr=self.return_type_a_qsr(data=data, error_tolerance=0.0), qsr_type="a")
+            world_qsr_state.add_qsr(qsr=qsr_a)
 
-                world_qsr_state.add_qsr(qsr=qsr_a)
-            except Exception, err:
-                # TODO how will I handle failed calls in terms of the world_qsr_state? although I think it is fine as it is
-                print(err, "error: type a")
-                print()
-
+        for p in for_whom["pairs"]:
             try:
-                between = str(p[0]) + "," + str(p[1])
                 data = (world_state_t.objects[p[0]], world_state_t.objects[p[1]],
                         world_state_tp.objects[p[0]], world_state_tp.objects[p[1]])
-                qsr_b_str = self.return_type_b_qsr(data=data, error_tolerance=0.0)
-                data = (world_state_t.objects[p[0]], world_state_t.objects[p[1]])
-                qsr_c_str = self.return_type_c_qsr(data=data, error_tolerance=0.0)
-                qsr_bc_str = str(qsr_b_str) + "," + str(qsr_c_str)
-                qsr_bc = QSR(timestamp=t, between=between, qsr=qsr_bc_str, qsr_type="bc")
-                world_qsr_state.add_qsr(qsr=qsr_bc)
-            except:
-                # TODO how will I handle failed calls in terms of the world_qsr_state? although I think it is fine as it is
-                print("error: type bc")
+            except KeyError:
+                world_state_tp_temp, tp_temp = self.find_pair_in_nearest_past(p, input_data, t)
+                # print("bc: tracing back in history")
+                # if world_state_tp_temp:
+                try:
+                    data = (world_state_t.objects[p[0]], world_state_t.objects[p[1]],
+                            world_state_tp_temp.objects[p[0]], world_state_tp_temp.objects[p[1]])
+                # else:
+                except AttributeError:
+                    # print("bc: No history found")
+                    continue
+            between = str(p[0]) + "," + str(p[1])
+            qsr_b_str = self.return_type_b_qsr(data=data, error_tolerance=0.0)
+            data = (world_state_t.objects[p[0]], world_state_t.objects[p[1]])
+            qsr_c_str = self.return_type_c_qsr(data=data, error_tolerance=0.0)
+            qsr_bc_str = str(qsr_b_str) + "," + str(qsr_c_str)
+            qsr_bc = QSR(timestamp=t, between=between, qsr=qsr_bc_str, qsr_type="bc")
+            world_qsr_state.add_qsr(qsr=qsr_bc)
+
         return world_qsr_state
 
     # "stationary", "moving",  # type A, on singles
