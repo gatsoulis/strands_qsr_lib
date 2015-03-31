@@ -19,6 +19,8 @@ from qsrlib_qsrs.qsr_qtc_b_simplified import QSR_QTC_B_Simplified
 from qsrlib_qsrs.qsr_qtc_c_simplified import QSR_QTC_C_Simplified
 from qsrlib_qsrs.qsr_qtc_bc_simplified import QSR_QTC_BC_Simplified
 from qsrlib_qsrs.qsr_arg_relations_distance import QSR_Arg_Relations_Distance
+from qsrlib_qsrs.qsr_sg1 import QSR_SG1
+
 
 class QSRlib_Response_Message(object):
     def __init__(self, qsrs, timestamp_request_made, timestamp_request_received, timestamp_qsrs_computed):
@@ -76,7 +78,8 @@ class QSRlib(object):
                                        "qtc_b_simplified": QSR_QTC_B_Simplified,
                                        "qtc_c_simplified": QSR_QTC_C_Simplified,
                                        "qtc_bc_simplified": QSR_QTC_BC_Simplified,
-                                       "arg_relations_distance": QSR_Arg_Relations_Distance}
+                                       "arg_relations_distance": QSR_Arg_Relations_Distance,
+                                       "sg1": QSR_SG1}
         self.__qsrs_active = {}
         self.__set_qsrs_active(qsrs_active)
         if help:
@@ -89,16 +92,17 @@ class QSRlib(object):
 
     def help(self):
         self.print_qsrs_available()
-        print()
-        self.print_qsrs_active()
-        print()
+        # print()
+        # self.print_qsrs_active()
+        # print()
 
     def set_out(self, b):
         self.__out = b
 
     def print_qsrs_available(self):
         l = sorted(self.__const_qsrs_available)
-        print("Types of QSRs that have been included so far in the lib are the following:")
+        # print("Types of QSRs that have been included so far in the lib are the following:")
+        print("Available QSRs:")
         for i in l:
             print("-", i)
 
