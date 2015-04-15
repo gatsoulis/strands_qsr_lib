@@ -46,6 +46,15 @@ class QSR_SG1(QSR_Abstractclass):
         """
         return 0, ""
 
+    def custom_checks_for_qsrs_for(self, qsrs_for, error_found):
+        """Custom checks of the qsrs_for field
+
+        :param qsrs_for: list of strings and/or tuples for which QSRs will be computed
+        :param error_found: if an error was found in the qsrs_for that violates the QSR rules
+        :return: qsrs_for, error_found
+        """
+        return qsrs_for, error_found
+
     def make(self, *args, **kwargs):
         """Make the QSRs
 
