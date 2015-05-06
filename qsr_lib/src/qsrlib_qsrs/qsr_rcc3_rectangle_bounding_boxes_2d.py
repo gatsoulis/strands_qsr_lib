@@ -92,8 +92,8 @@ class QSR_RCC3_Rectangle_Bounding_Boxes_2D(QSR_Abstractclass):
     def __compute_qsr(self, bb1, bb2):
         """Return symmetrical RCC3 relation
 
-        :param bb1: first bounding box (x_bottom_left, y_bottom_left, x_top_right, y_top_right)
-        :param bb2: second bounding box (x_bottom_left, y_bottom_left, x_top_right, y_top_right)
+        :param bb1: diagonal points coordinates of first bounding box (x1, y1, x2, y2)
+        :param bb2: diagonal points coordinates of second bounding box (x1, y1, x2, y2)
         :return: an RCC3 relation from the following: 'dc':disconnected, 'po':partial overlap, 'o': occluded/part of
         """
 
@@ -140,8 +140,8 @@ class QSR_RCC3_Rectangle_Bounding_Boxes_2D(QSR_Abstractclass):
         """
         https://rbrundritt.wordpress.com/2009/10/03/determining-if-two-bounding-boxes-overlap/
 
-        :param bb1: first bounding box (x_bottom_left, y_bottom_left, x_top_right, y_top_right)
-        :param bb2: second bounding box (x_bottom_left, y_bottom_left, x_top_right, y_top_right)
+        :param bb1: diagonal points coordinates of first bounding box (x1, y1, x2, y2)
+        :param bb2: diagonal points coordinates of second bounding box (x1, y1, x2, y2)
         :return:
         """
 
