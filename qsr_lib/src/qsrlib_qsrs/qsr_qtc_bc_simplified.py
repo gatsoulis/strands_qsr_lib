@@ -47,12 +47,27 @@ class QSR_QTC_BC_Simplified(QSR_QTC_Simplified_Abstractclass):
 
         parameters = self._get_parameters(parameters, **kwargs)
 
-        if kwargs["qsrs_for"]:
-            qsrs_for, error_found = self.check_qsrs_for_data_exist(sorted(input_data.trace[timestamps[0]].objects.keys()), kwargs["qsrs_for"])
-            if error_found:
-                raise Exception("Invalid object combination. Has to be list of tuples. Heard: " + np.array2string(np.array(kwargs['qsrs_for'])))
-        else:
-            qsrs_for = self._return_all_possible_combinations(sorted(input_data.trace[timestamps[0]].objects.keys()))
+        ## old, error_found should be deprecated as it not properly used, errors should raise exceptions in the checking functions if needed...
+        # if kwargs["qsrs_for"]:
+        #     qsrs_for, error_found = self.check_qsrs_for_data_exist(sorted(input_data.trace[timestamps[0]].objects.keys()), kwargs["qsrs_for"])
+        #     if error_found:
+        #         raise Exception("Invalid object combination. Has to be list of tuples. Heard: " + np.array2string(np.array(kwargs['qsrs_for'])))
+        # else:
+        #     qsrs_for = self._return_all_possible_combinations(sorted(input_data.trace[timestamps[0]].objects.keys()))
+        qsrs_for_from_args, error_found = True, False
+        try:
+            qsrs_for = kwargs["dynamic_args"][self._unique_id]["qsrs_for"]
+        except KeyError:
+            try:
+                qsrs_for = kwargs["qsrs_for"]
+            except KeyError:
+                qsrs_for = self._return_all_possible_combinations(sorted(input_data.trace[timestamps[0]].objects.keys()))
+                qsrs_for_from_args = False
+        if qsrs_for_from_args:
+            if qsrs_for:
+                qsrs_for, error_found = self.check_qsrs_for_data_exist(sorted(input_data.trace[timestamps[0]].objects.keys()), qsrs_for)
+            else:
+                qsrs_for, error_found = self._return_all_possible_combinations(sorted(input_data.trace[timestamps[0]].objects.keys())), True
 
         if qsrs_for:
             for p in qsrs_for:

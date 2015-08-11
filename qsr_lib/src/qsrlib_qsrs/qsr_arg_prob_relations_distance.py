@@ -39,11 +39,13 @@ class QSR_Arg_Prob_Relations_Distance(QSR_Arg_Relations_Distance):
         :param error_found: if an error was found in the qsrs_for that violates the QSR rules
         :return: qsrs_for, error_found
         """
-        for p in list(qsrs_for):
-            if (type(p) is not tuple) and (type(p) is not list) and (len(p) != 2):
-                qsrs_for.remove(p)
+        ret = []
+        for p in qsrs_for:
+            if isinstance(p, (list, tuple)) and (len(p) == 2):
+                ret.append(p)
+            else:
                 error_found = True
-        return qsrs_for, error_found
+        return ret, error_found
 
     def __normpdf(self, x, mu, sigma):
         u = (x-mu)/np.abs(sigma)

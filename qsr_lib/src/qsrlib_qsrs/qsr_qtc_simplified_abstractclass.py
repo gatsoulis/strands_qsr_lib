@@ -345,11 +345,13 @@ class QSR_QTC_Simplified_Abstractclass(QSR_Abstractclass):
         :param error_found: if an error was found in the qsrs_for that violates the QSR rules
         :return: qsrs_for, error_found
         """
-        for p in list(qsrs_for):
-            if (type(p) is not tuple) and (type(p) is not list) and (len(p) != 2):
-                qsrs_for.remove(p)
+        ret = []
+        for p in qsrs_for:
+            if isinstance(p, (list, tuple)) and (len(p) == 2):
+                ret.append(p)
+            else:
                 error_found = True
-        return qsrs_for, error_found
+        return ret, error_found
 
     def _get_parameters(self, default, **kwargs):
         try: # Depricated
@@ -392,12 +394,27 @@ class QSR_QTC_Simplified_Abstractclass(QSR_Abstractclass):
         ret = World_QSR_Trace(qsr_type=self._unique_id)
         timestamps = input_data.get_sorted_timestamps()
 
-        if kwargs["qsrs_for"]:
-            qsrs_for, error_found = self.check_qsrs_for_data_exist(sorted(input_data.trace[timestamps[0]].objects.keys()), kwargs["qsrs_for"])
-            if error_found:
-                raise Exception("Invalid object combination. Has to be list of tuples. Heard: " + np.array2string(np.array(kwargs['qsrs_for'])))
-        else:
-            qsrs_for = self._return_all_possible_combinations(sorted(input_data.trace[timestamps[0]].objects.keys()))
+        ## old, error_found should be deprecated as it not properly used, errors should raise exceptions in the checking functions if needed...
+        # if kwargs["qsrs_for"]:
+        #     qsrs_for, error_found = self.check_qsrs_for_data_exist(sorted(input_data.trace[timestamps[0]].objects.keys()), kwargs["qsrs_for"])
+        #     if error_found:
+        #         raise Exception("Invalid object combination. Has to be list of tuples. Heard: " + np.array2string(np.array(kwargs['qsrs_for'])))
+        # else:
+        #     qsrs_for = self._return_all_possible_combinations(sorted(input_data.trace[timestamps[0]].objects.keys()))
+        qsrs_for_from_args, error_found = True, False
+        try:
+            qsrs_for = kwargs["dynamic_args"][self._unique_id]["qsrs_for"]
+        except KeyError:
+            try:
+                qsrs_for = kwargs["qsrs_for"]
+            except KeyError:
+                qsrs_for = self._return_all_possible_combinations(sorted(input_data.trace[timestamps[0]].objects.keys()))
+                qsrs_for_from_args = False
+        if qsrs_for_from_args:
+            if qsrs_for:
+                qsrs_for, error_found = self.check_qsrs_for_data_exist(sorted(input_data.trace[timestamps[0]].objects.keys()), qsrs_for)
+            else:
+                qsrs_for, error_found = self._return_all_possible_combinations(sorted(input_data.trace[timestamps[0]].objects.keys())), True
 
         parameters = {
             "quantisation_factor": 0.0,

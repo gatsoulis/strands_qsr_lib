@@ -40,31 +40,27 @@ class QSR_Abstractclass(object):
         return self.make(*args, **kwargs)
 
     def check_qsrs_for_data_exist(self, objects_names, qsrs_for):
-        if len(objects_names) == 0:
+        if not objects_names:
             error_found = True if qsrs_for else False
             return [], error_found
-
-        if type(qsrs_for) is not list:
-            raise ValueError("qsrs_for must be a list of strings and/or tuples of strings")
-
-        qsrs_for_ret = []
-        error_found = False
-
+        if not isinstance(qsrs_for, (list, tuple)):
+            raise TypeError("qsrs_for must be a list or tuple")
+        qsrs_for_ret, error_found = [], False
         for p in qsrs_for:
-            if type(p) is str:
+            if isinstance(p, str):
                 if p in objects_names:
                     qsrs_for_ret.append(p)
-            elif (type(p) is tuple) or (type(p) is list):
+            elif isinstance(p, (list, tuple)):
                 tuple_data_exists = True
                 for o in p:
                     if o not in objects_names:
                         tuple_data_exists = False
+                        error_found = True
                         break
                 if tuple_data_exists:
                     qsrs_for_ret.append(p)
             else:
-                raise ValueError("Elements of qsrs_for must be strings and/or tuples")
-
+                raise TypeError("Elements of 'qsrs_for' must be strings and/or lists/tuples")
         qsrs_for_ret, error_found = self.custom_checks_for_qsrs_for(qsrs_for_ret, error_found)
         return qsrs_for_ret, error_found
 

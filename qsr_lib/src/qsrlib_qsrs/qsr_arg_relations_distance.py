@@ -51,12 +51,13 @@ class QSR_Arg_Relations_Distance(QSR_Arg_Relations_Abstractclass):
         :param error_found: if an error was found in the qsrs_for that violates the QSR rules
         :return: qsrs_for, error_found
         """
-        for p in list(qsrs_for):
-            if (type(p) is not tuple) and (type(p) is not list) and (len(p) != 2):
-                qsrs_for.remove(p)
+        ret = []
+        for p in qsrs_for:
+            if isinstance(p, (list, tuple)) and (len(p) == 2):
+                ret.append(p)
+            else:
                 error_found = True
-        return qsrs_for, error_found
-
+        return ret, error_found
 
     def make(self, *args, **kwargs):
         """Make the QSRs
@@ -101,10 +102,20 @@ class QSR_Arg_Relations_Distance(QSR_Arg_Relations_Abstractclass):
         for t in input_data.get_sorted_timestamps():
             world_state = input_data.trace[t]
             timestamp = world_state.timestamp
-            if kwargs["qsrs_for"]:
-                qsrs_for, error_found = self.check_qsrs_for_data_exist(world_state.objects.keys(), kwargs["qsrs_for"])
-            else:
-                qsrs_for = self.qsrs_for_default(world_state.objects.keys())
+            qsrs_for_from_args, error_found = True, False
+            try:
+                qsrs_for = kwargs["dynamic_args"][self._unique_id]["qsrs_for"]
+            except KeyError:
+                try:
+                    qsrs_for = kwargs["qsrs_for"]
+                except KeyError:
+                    qsrs_for = self.qsrs_for_default(world_state.objects.keys())
+                    qsrs_for_from_args = False
+            if qsrs_for_from_args:
+                if qsrs_for:
+                    qsrs_for, error_found = self.check_qsrs_for_data_exist(world_state.objects.keys(), qsrs_for)
+                else:
+                    qsrs_for, error_found = self.qsrs_for_default(world_state.objects.keys()), True
             if qsrs_for:
                 for p in qsrs_for:
                     between = str(p[0]) + "," + str(p[1])

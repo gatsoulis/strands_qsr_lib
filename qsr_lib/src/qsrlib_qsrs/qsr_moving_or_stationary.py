@@ -43,11 +43,15 @@ class QSR_Moving_or_Stationary(QSR_Abstractclass):
         :param error_found:
         :return: qsrs_for, error_found
         """
-        for p in list(qsrs_for):
-            if type(p) is not str:
-                qsrs_for.remove(p)
-                error_found = True
-        return qsrs_for, error_found
+        ret = []
+        for p in qsrs_for:
+            if isinstance(p, (list, tuple)):
+                ret += list(p)
+            elif isinstance(p, str):
+                ret.append(p)
+            else:
+                raise TypeError
+        return set(ret), error_found
 
     def make(self, *args, **kwargs):
         """Make the QSRs
@@ -59,27 +63,36 @@ class QSR_Moving_or_Stationary(QSR_Abstractclass):
         """
         input_data = kwargs["input_data"]
         include_missing_data = kwargs["include_missing_data"]
-        quantisation_factor = 0.0
-        try:
-            quantisation_factor = float(kwargs["dynamic_args"]["quantisation_factor"])
-            print("Warning: This feature is deprecated, use dynamic_args with the namespace '%s' on your request message instead" % self._unique_id)
-        except:
-            pass
-
         try:
             quantisation_factor = float(kwargs["dynamic_args"][self._unique_id]["quantisation_factor"])
-        except:
-            pass
+        except KeyError:
+            try:
+                quantisation_factor = float(kwargs["dynamic_args"]["quantisation_factor"])
+                print("Warning: This feature is deprecated, use dynamic_args with the namespace '%s' on your request message instead" % self._unique_id)
+            except (KeyError, TypeError):
+                quantisation_factor = 0.0
+        except TypeError:
+            quantisation_factor = 0.0
 
         ret = World_QSR_Trace(qsr_type=self._unique_id)
         ts = input_data.get_sorted_timestamps()
         for t, tp in zip(ts[1:], ts):
             world_state_now = input_data.trace[t]
             world_state_previous = input_data.trace[tp]
-            if kwargs["qsrs_for"]:
-                qsrs_for, error_found = self.check_qsrs_for_data_exist(world_state_now.objects.keys(), kwargs["qsrs_for"])
-            else:
-                qsrs_for = world_state_now.objects.keys()
+            qsrs_for_from_args, error_found = True, False
+            try:
+                qsrs_for = kwargs["dynamic_args"][self._unique_id]["qsrs_for"]
+            except KeyError:
+                try:
+                    qsrs_for = kwargs["qsrs_for"]
+                except KeyError:
+                    qsrs_for = world_state_now.objects.keys()
+                    qsrs_for_from_args = False
+            if qsrs_for_from_args:
+                if qsrs_for:
+                    qsrs_for, error_found = self.check_qsrs_for_data_exist(world_state_now.objects.keys(), qsrs_for)
+                else:
+                    qsrs_for, error_found = world_state_now.objects.keys(), True
             if qsrs_for:
                 for between in qsrs_for: # yes between is probably not the best name as it is simply object_name
                     point_now = (world_state_now.objects[between].x, world_state_now.objects[between].y)
